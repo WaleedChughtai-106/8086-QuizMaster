@@ -174,12 +174,12 @@ sd_easy:
 
 sd_med:
   mov  difficulty, 2
-  mov  num_range, 25   ; medium numbers
+  mov  num_range, 20   ; medium numbers
   jmp  sd_done
 
 sd_hard:
   mov  difficulty, 3
-  mov  num_range, 35   ; larger numbers
+  mov  num_range, 30   ; larger numbers
 
 sd_done:
   ; just move to next line after selection
