@@ -43,38 +43,150 @@ get_random proc
   ret
 get_random endp
 
+; ============================================================
+; new additoin: check_history
+; purpose:
+;   checks if num1 was used in the last 5 questions
+;
+; input:
+;   num1 must already have a value
+;
+; output:
+;   zf = 1 → num1 was found (repeat)
+;   zf = 0 → num1 not found (safe to use)
+;
+; idea:
+;   we go through the 5-word array one by one
+;   si moves by 2 each time since each value is a word
+; ============================================================
+check_history proc
+  push cx              ; save cx (used by loop)
+  push si              ; save si (we use it for indexing)
 
+  mov  si, 0           ; start from first element
+  mov  cx, 5           ; total 5 entries to check
+  mov  ax, num1        ; value we are searching for
+
+ch_loop:
+  cmp  ax, q_history[si]   ; compare with current history value
+  je   ch_found            ; if equal → found it
+
+  add  si, 2               ; move to next word (2 bytes)
+  loop ch_loop             ; repeat until cx = 0
+
+  ; if we reach here, num1 was not found
+  ; we make sure zf = 0
+  or   ax, ax              ; sets flags based on ax (non-zero → zf = 0)
+
+  pop  si
+  pop  cx
+  ret
+
+ch_found:
+  ; num1 exists in history
+  ; force zf = 1
+  xor  ax, ax              ; ax = 0
+  cmp  ax, 0               ; 0 == 0 → zf = 1
+
+  pop  si
+  pop  cx
+  ret
+check_history endp
+
+
+; ============================================================
+; new addition: update_history   
+; purpose:
+;   saves current num1 into q_history array
+;
+; when used:
+;   after a question is finalized
+;
+; idea:
+;   acts like a circular buffer of size 5
+;   index goes 0 → 1 → 2 → 3 → 4 → back to 0
+; ============================================================
+update_history proc
+  push ax
+  push si
+
+  ; convert index to byte offset (word = 2 bytes)
+  mov  al, hist_idx
+  mov  ah, 0
+  shl  ax, 1              ; ax = hist_idx * 2
+  mov  si, ax
+
+  ; store num1 in the correct slot
+  mov  ax, num1
+  mov  q_history[si], ax
+
+  ; move index forward
+  mov  al, hist_idx
+  inc  al
+  cmp  al, 5              ; if it reaches 5, reset to 0
+  jl   uh_save
+
+  mov  al, 0
+
+uh_save:
+  mov  hist_idx, al
+
+  pop  si
+  pop  ax
+  ret
+update_history endp
+
+
+; ============================================================
+; gen_question
+; purpose:
+;   generates a math question based on difficulty
+;   also avoids repeating recent num1 values using history
+;
+; idea:
+;   - pick operator depending on difficulty
+;   - keep generating num1 until it's not in history
+;   - generate num2 normally
+;   - calculate correct answer
+;   - save num1 into history so it won't repeat
+; ============================================================
 gen_question proc
-  ; reset hint flag for new question
-  mov  hint_used, 0
+  mov  hint_used, 0        ; reset hint flag for new question
 
-  ; choose operator based on difficulty
+  ; decide operator based on difficulty
   mov  bl, difficulty
   cmp  bl, 1
   jne  gq_not_easy
 
-  mov  bx, 2        ; easy ? only + and -
+  mov  bx, 2               ; easy → only add and subtract
   jmp  gq_get_op
 
 gq_not_easy:
-  mov  bx, 3        ; medium/hard ? +, -, *
+  mov  bx, 3               ; medium/hard → add, sub, multiply
 
 gq_get_op:
   call get_random
-  dec  ax           ; convert to 0-based (0,1,2)
+  dec  ax                  ; convert to 0-based (0,1,2)
   mov  operator, al
 
-  ; generate first number
+gq_try:
+  ; ------------------- new part -------------------
+  ; generate num1 and check if it was used recently
+  ; this prevents repeating the same first number
   mov  bx, num_range
   call get_random
   mov  num1, ax
 
-  ; generate second number
+  call check_history       ; checks last 5 stored values
+  je   gq_repeat           ; if found (zf=1), it's a repeat → retry
+  ; ------------------------------------------------
+
+  ; num1 is fine, now generate num2 (same as old logic)
   mov  bx, num_range
   call get_random
   mov  num2, ax
 
-  ; if operator is subtraction, avoid negative answers
+  ; if subtraction, make sure result is not negative
   cmp  operator, 1
   jne  gq_calc
 
@@ -82,13 +194,25 @@ gq_get_op:
   cmp  ax, num2
   jge  gq_calc
 
-  ; swap numbers so num1 >= num2
-  ; simple trick to keep answer positive
+  ; swap so num1 >= num2
   mov  cx, num2
   mov  num2, ax
   mov  num1, cx
+  jmp  gq_calc
+
+gq_repeat:
+  ; ------------------- new part -------------------
+  ; this runs only when num1 was already used recently
+  ; show a small message so user knows why it changed
+  print_str msg_skip_rep
+
+  ; try again → go back and generate a new num1
+  ; operator stays same, only num1 is retried
+  jmp  gq_try
+  ; ------------------------------------------------
 
 gq_calc:
+  ; calculate correct answer (same as before)
   mov  ax, num1
 
   cmp  operator, 0
@@ -97,8 +221,8 @@ gq_calc:
   cmp  operator, 1
   je   gq_sub
 
-  ; multiplication case
-  mul  num2          ; ax = num1 * num2
+  ; multiplication
+  mul  num2
   jmp  gq_save
 
 gq_add:
@@ -109,8 +233,14 @@ gq_sub:
   sub  ax, num2
 
 gq_save:
-  ; store final correct answer
-  mov  correct_ans, ax
+  mov  correct_ans, ax     ; store final answer
+
+  ; ------------------- new part -------------------
+  ; save num1 into history array
+  ; so next questions can avoid repeating it
+  call update_history
+  ; ------------------------------------------------
+
   ret
 gen_question endp
 
