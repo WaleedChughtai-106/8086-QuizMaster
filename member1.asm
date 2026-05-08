@@ -174,7 +174,7 @@ sd_easy:
 
 sd_med:
   mov  difficulty, 2
-  mov  num_range, 20   ; medium numbers
+  mov  num_range, 20  ; medium numbers
   jmp  sd_done
 
 sd_hard:
@@ -187,4 +187,5 @@ sd_done:
   mov  ah, 09h
   int  21h
   ret
+
 select_difficulty endp
