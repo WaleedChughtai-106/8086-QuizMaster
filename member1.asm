@@ -1,46 +1,53 @@
-; member 1 section
-; random generation, question making, difficulty selection
+; ============================================================
+; member1\member1.asm
+; owner: Waleed Ahmed
+; procedures: get_random, check_history, update_history,
+;             gen_question, get_player_name, select_difficulty
+; ============================================================
 
+
+; ----------------------------------------------------------
+; get_random
+; returns a number between 1 and bx (inclusive)
+; uses a 16-bit linear feedback shift register (lfsr)
+; ----------------------------------------------------------
 get_random proc
-  ; load previous seed value
+
   mov  ax, rand_seed
 
-  ; start building new random bits using xor feedback (lfsr idea)
-  ; we pick some bits and mix them
-
+  ; lfsr works by xoring specific bits together to produce
+  ; a feedback bit, then shifting the whole register right.
+  ; we tap bits 15, 13, 12 and 10 - this combination gives
+  ; the longest possible sequence before it repeats (65535).
   mov  dx, ax
-  and  dx, 8000h        ; gets highest bit
+  and  dx, 8000h             ; isolate bit 15
 
   mov  cx, ax
-  and  cx, 2000h        ; takes another bit
-  shl  cx, 2            ; shifts it left so positions match
-  xor  dx, cx           ; mixes bits using xor
+  and  cx, 2000h             ; bit 13
+  shl  cx, 2
+  xor  dx, cx
 
   mov  cx, ax
-  and  cx, 1000h
+  and  cx, 1000h             ; bit 12
   shl  cx, 3
   xor  dx, cx
 
   mov  cx, ax
-  and  cx, 0400h
+  and  cx, 0400h             ; bit 10
   shl  cx, 5
   xor  dx, cx
 
-  ; shift number right and insert new calculated bit
-  shr  ax, 1
-  or   ax, dx
-
-  ; save updated seed for next time
+  shr  ax, 1                 ; shift the register right by one
+  or   ax, dx                ; put the feedback bit into the top
   mov  rand_seed, ax
 
-  ; now limit number within range 1 to bx
-  ; division gives remainder in dx
+  ; map the 16-bit result into the range 1..bx using remainder
   mov  dx, 0
-  div  bx
-  mov  ax, dx           ; remainder is our random value
-  inc  ax               ; make it 1-based instead of 0-based
-
+  div  bx                    ; dx = ax mod bx  (gives 0 to bx-1)
+  mov  ax, dx
+  inc  ax                    ; shift up to 1-based
   ret
+
 get_random endp
 
 ; ============================================================
