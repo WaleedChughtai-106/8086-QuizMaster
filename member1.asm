@@ -298,77 +298,44 @@ gpn_done:
 
 get_player_name endp
 
+; ----------------------------------------------------------
+; select_difficulty
+; shows the menu and sets difficulty and num_range
+; ----------------------------------------------------------
 select_difficulty proc
-  ; print difficulty options on screen
-  lea  dx, msg_diff
-  mov  ah, 09h
-  int  21h
 
-  lea  dx, msg_d1
-  mov  ah, 09h
-  int  21h
-
-  lea  dx, msg_d2
-  mov  ah, 09h
-  int  21h
-
-  lea  dx, msg_d3
-  mov  ah, 09h
-  int  21h
-
-  lea  dx, msg_dchoice
-  mov  ah, 09h
-  int  21h
+  print_str msg_diff
+  print_str msg_d1
+  print_str msg_d2
+  print_str msg_d3
+  print_str msg_dchoice
 
 sd_read:
-  ; read single key input from user
-  mov  ah, 01h
-  int  21h
-
-  ; check what user entered
+  read_key
   cmp  al, '1'
   je   sd_easy
-
   cmp  al, '2'
   je   sd_med
-
   cmp  al, '3'
   je   sd_hard
-
-  ; if input is wrong, show message and ask again
-  lea  dx, newline
-  mov  ah, 09h
-  int  21h
-
-  lea  dx, msg_dinvalid
-  mov  ah, 09h
-  int  21h
-
-  lea  dx, msg_dchoice
-  mov  ah, 09h
-  int  21h
-
+  print_nl
+  print_str msg_dinvalid
+  print_str msg_dchoice
   jmp  sd_read
 
 sd_easy:
   mov  difficulty, 1
-  mov  num_range, 15   ; small numbers
+  mov  num_range, 15
   jmp  sd_done
-
 sd_med:
   mov  difficulty, 2
-  mov  num_range, 20  ; medium numbers
+  mov  num_range, 20
   jmp  sd_done
-
 sd_hard:
   mov  difficulty, 3
-  mov  num_range, 30   ; larger numbers
-
+  mov  num_range, 30
 sd_done:
-  ; just move to next line after selection
-  lea  dx, newline
-  mov  ah, 09h
-  int  21h
+  print_nl
   ret
 
 select_difficulty endp
