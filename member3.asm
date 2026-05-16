@@ -305,3 +305,142 @@ SR_RESTART:
   INT  21h
   JMP  GAME_LOOP
 SHOW_RESULT ENDP
+
+; ============================================================
+; SHOW_CATEGORY_SCORES  -  Print score breakdown by category
+; ============================================================
+SHOW_CATEGORY_SCORES PROC
+  LEA  DX, MSG_CAT_HDR
+  MOV  AH, 09h
+  INT  21h
+  LEA  DX, MSG_CAT_ADD
+  MOV  AH, 09h
+  INT  21h
+  MOV  AL, SCORE_ADD
+  MOV  AH, 0
+  CALL PRINT_NUM
+  LEA  DX, MSG_CAT_NL
+  MOV  AH, 09h
+  INT  21h
+  LEA  DX, MSG_CAT_SUB
+  MOV  AH, 09h
+  INT  21h
+  MOV  AL, SCORE_SUB
+  MOV  AH, 0
+  CALL PRINT_NUM
+  LEA  DX, MSG_CAT_NL
+  MOV  AH, 09h
+  INT  21h
+  LEA  DX, MSG_CAT_MUL
+  MOV  AH, 09h
+  INT  21h
+  MOV  AL, SCORE_MUL
+  MOV  AH, 0
+  CALL PRINT_NUM
+  LEA  DX, MSG_CAT_NL
+  MOV  AH, 09h
+  INT  21h
+  RET
+SHOW_CATEGORY_SCORES ENDP
+
+; ============================================================
+; PRINT_LB_NAME  -  Print leaderboard name (8 chars max)
+; ============================================================
+PRINT_LB_NAME PROC
+  PUSH CX
+  PUSH SI
+  MOV  CX, 8
+PLN_LOOP:
+  MOV  AL, LB_NAMES[SI]
+  CMP  AL, '-'
+  JE   PLN_STOP
+  MOV  AH, 02h
+  MOV  DL, AL
+  INT  21h
+  INC  SI
+  LOOP PLN_LOOP
+PLN_STOP:
+  POP  SI
+  POP  CX
+  RET
+PRINT_LB_NAME ENDP
+
+; ============================================================
+; SHOW_LEADERBOARD  -  Display top 3 scores with names
+; ============================================================
+SHOW_LEADERBOARD PROC
+  PUSH CX
+  PUSH SI
+  LEA  DX, MSG_LB_HDR
+  MOV  AH, 09h
+  INT  21h
+  LEA  DX, MSG_LB_1
+  MOV  AH, 09h
+  INT  21h
+  CMP  LB_SCORES[0], 0
+  JE   SLB_EMPTY1
+  MOV  SI, 0
+  CALL PRINT_LB_NAME
+  LEA  DX, MSG_LB_SEP
+  MOV  AH, 09h
+  INT  21h
+  MOV  AL, LB_SCORES[0]
+  MOV  AH, 0
+  CALL PRINT_NUM
+  LEA  DX, MSG_LB_PTS
+  MOV  AH, 09h
+  INT  21h
+  JMP  SLB_2
+SLB_EMPTY1:
+  LEA  DX, MSG_LB_EMPTY
+  MOV  AH, 09h
+  INT  21h
+SLB_2:
+  LEA  DX, MSG_LB_2
+  MOV  AH, 09h
+  INT  21h
+  CMP  LB_SCORES[1], 0
+  JE   SLB_EMPTY2
+  MOV  SI, 8
+  CALL PRINT_LB_NAME
+  LEA  DX, MSG_LB_SEP
+  MOV  AH, 09h
+  INT  21h
+  MOV  AL, LB_SCORES[1]
+  MOV  AH, 0
+  CALL PRINT_NUM
+  LEA  DX, MSG_LB_PTS
+  MOV  AH, 09h
+  INT  21h
+  JMP  SLB_3
+SLB_EMPTY2:
+  LEA  DX, MSG_LB_EMPTY
+  MOV  AH, 09h
+  INT  21h
+SLB_3:
+  LEA  DX, MSG_LB_3
+  MOV  AH, 09h
+  INT  21h
+  CMP  LB_SCORES[2], 0
+  JE   SLB_EMPTY3
+  MOV  SI, 16
+  CALL PRINT_LB_NAME
+  LEA  DX, MSG_LB_SEP
+  MOV  AH, 09h
+  INT  21h
+  MOV  AL, LB_SCORES[2]
+  MOV  AH, 0
+  CALL PRINT_NUM
+  LEA  DX, MSG_LB_PTS
+  MOV  AH, 09h
+  INT  21h
+  JMP  SLB_DONE
+SLB_EMPTY3:
+  LEA  DX, MSG_LB_EMPTY
+  MOV  AH, 09h
+  INT  21h
+SLB_DONE:
+  POP  SI
+  POP  CX
+  RET
+SHOW_LEADERBOARD ENDP
