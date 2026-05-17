@@ -1,18 +1,6 @@
 ; ============================================================
 ; main.asm
 ; cen 323 - coal semester project | math quiz master v3.0
-; ------------------------------------------------------------
-; only open this file in emu8086 - do not open member files.
-; member files are pulled in via include and contain only
-; procedures, no segment directives of their own.
-;
-; emu8086 is a single-pass assembler so a label must be seen
-; before it can be called. the solution used here:
-;   1. main proc appears first (required by "end main")
-;   2. main immediately jumps to startup which is at the
-;      very bottom of the file, after all includes
-;   3. every procedure is therefore defined before startup
-;      calls it - no forward reference errors
 ; ============================================================
 
 .model small
